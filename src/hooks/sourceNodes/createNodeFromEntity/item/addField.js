@@ -13,7 +13,7 @@ module.exports = function addField(
   entitiesRepo,
   i18n,
   additionalNodesToCreate,
-  additionalNodesPrefix = ''
+  additionalNodesPrefix = '',
 ) {
   const value = localizedRead(
     entity,
@@ -43,7 +43,12 @@ module.exports = function addField(
         mediaType = 'text/html';
       }
 
-      const textNode = buildTextNode(node, additionalNodesPrefix + key, value, mediaType);
+      const textNode = buildTextNode(
+        node,
+        additionalNodesPrefix + key,
+        value,
+        mediaType,
+      );
       additionalNodesToCreate.push(textNode);
 
       root[`${key}Node___NODE`] = textNode.id;
@@ -82,12 +87,6 @@ module.exports = function addField(
           twitterCard: value.twitterCard,
           image___NODE: value.image && `DatoCmsAsset-${value.image}`,
         };
-      }
-      break;
-    }
-    case 'json': {
-      if (value) {
-        root[key] = JSON.parse(value);
       }
       break;
     }
