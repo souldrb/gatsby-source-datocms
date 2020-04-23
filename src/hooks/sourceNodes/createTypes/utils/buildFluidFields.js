@@ -12,9 +12,13 @@ module.exports = () => {
       },
       maxHeight: 'Int',
       sizes: 'String',
-      imgixParams: 'DatoCmsImgixParams'
+      imgixParams: 'DatoCmsImgixParams',
+      resizes: {
+        type: '[Int]',
+        defaultValue: [375, 1024, 1440, 2560]
+      }
     },
-    resolve: (image, { maxWidth, maxHeight, imgixParams = {}, sizes }) => {
+    resolve: (image, { maxWidth, maxHeight, imgixParams = {}, sizes, resizes }) => {
       if (!isImage(image)) {
         return null;
       }
@@ -31,20 +35,14 @@ module.exports = () => {
       const realSizes =
         sizes || `(max-width: ${realMaxWidth}px) 100vw, ${realMaxWidth}px`;
 
-      const srcSet = [0.25, 0.5, 1, 1.5, 2, 3]
-        .map(m => realMaxWidth * m)
-        .map(Math.round)
+      const srcSet = resizes
         .filter(screen => screen < finalWidth)
         .concat([finalWidth])
         .map(screen => {
           let extraParams = {
-            dpr: Math.max(0.01, Math.ceil((screen / finalWidth) * 100) / 100),
+            dpr: 1,
+            w: screen
           };
-
-          if (!imgixParams.w && !imgixParams.h) {
-            extraParams.w = finalWidth;
-          }
-
           const url = createUrl(image, imgixParams, extraParams, true);
 
           return `${url} ${Math.round(screen)}w`;
