@@ -1,14 +1,14 @@
 {
     "name": "gatsby-source-datocms",
-    "version": "2.2.1",
+    "version": "2.2.5",
     "description": "Gatsby source plugin for building websites using DatoCMS as data source",
     "main": "index.js",
     "scripts": {
         "prettier": "prettier --write \"src/**/*.{js,jsx}\"",
         "build": "babel src --out-dir . --ignore __tests__",
         "watch": "babel -w src --out-dir . --ignore __tests__",
-        "prepublish": "cross-env NODE_ENV=production npm run build",
         "prepare": "cross-env NODE_ENV=production npm run build",
+        "prepublish": "cross-env NODE_ENV=production npm run build",
         "test": "echo 1"
     },
     "devDependencies": {
@@ -24,7 +24,7 @@
     },
     "dependencies": {
         "core-js": "^3.2.1",
-        "datocms-client": ">=3.0.18",
+        "datocms-client": ">=3.0.32",
         "fs-extra": ">=8.1.0",
         "humps": ">=2.0.1",
         "imgix-url-params": "11.2.0",
