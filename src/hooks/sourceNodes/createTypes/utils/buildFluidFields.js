@@ -50,10 +50,6 @@ module.exports = () => {
             w: screen
           };
 
-          if (!imgixParams.w && !imgixParams.h) {
-            extraParams.w = finalWidth;
-          }
-
           const url = createUrl(
             image.url,
             objectAssign({}, imgixParams, extraParams),
