@@ -1,34 +1,43 @@
-const { camelize } = require('humps');
+const { camelizeKeys } = require('datocms-client');
 
-module.exports = ({
-  parentItemType,
-  field,
-  schema,
-  gqlItemTypeName,
-  entitiesRepo,
-}) => {
-  const fieldKey = camelize(field.apiKey);
+function localizedDefaultFieldMetadata(metadata, attribute, i18n) {
+  const fallbacks = i18n.fallbacks || {};
+  const locales = [i18n.locale].concat(fallbacks[i18n.locale] || []);
+  const localeWithValue = locales.find(locale => {
+    const localeValue = metadata[locale] && metadata[locale][attribute];
+    return (
+      localeValue && localeValue !== null && localeValue !== undefined && localeValue !== ''
+    );
+  });
+  return localeWithValue ? metadata[localeWithValue][attribute] : null;
+}
 
-  return {
-    fieldType: {
-      type: 'DatoCmsFileField',
-      allLocalesResolver: (parent) => parent.value,
-      normalResolver: (parent) => parent[fieldKey],
-      resolveFromValue: (fileObject, args, context) => {
-        if (!fileObject) {
-          return null;
-        }
+module.exports = () => ({
+  type: 'DatoCmsFileField',
+  resolveForSimpleField: (fieldValue, context, node, i18n) => {
+    if (!fieldValue) {
+      return null;
+    }
 
-        const upload = context.nodeModel.getNodeById({ id: fileObject.uploadId___NODE });
-        const defaults = upload.defaultFieldMetadata[fileObject.locale];
+    const upload = context.nodeModel.getNodeById({
+      id: `DatoCmsAsset-${fieldValue.upload_id}`,
+    });
 
-        return {
-          ...upload,
-          alt: fileObject.alt || defaults.alt,
-          title: fileObject.title || defaults.title,
-          customData: { ...defaults.customData, ...fileObject.customData },
-        };
+    const defaultAlt = localizedDefaultFieldMetadata(upload.entityPayload.attributes.default_field_metadata, 'alt', i18n);
+    const defaultTitle = localizedDefaultFieldMetadata(upload.entityPayload.attributes.default_field_metadata, 'title', i18n);
+    const defaultFocalPoint = localizedDefaultFieldMetadata(upload.entityPayload.attributes.default_field_metadata, 'focal_point', i18n);
+    const defaultCustomData = localizedDefaultFieldMetadata(upload.entityPayload.attributes.default_field_metadata, 'custom_data', i18n);
+    const fallbackFocalPoint = upload.entityPayload.attributes.is_image && upload.entityPayload.attributes.format !== 'svg' ? { x: 0.5, y: 0.5 } : null;
+
+    return {
+      ...upload,
+      alt: fieldValue.alt || defaultAlt,
+      title: fieldValue.title || defaultTitle,
+      focalPoint: fieldValue.focal_point || defaultFocalPoint || fallbackFocalPoint,
+      customData: {
+        ...camelizeKeys(defaultCustomData),
+        ...fieldValue.custom_data,
       },
-    },
-  };
-};
+    };
+  },
+});

@@ -1,6 +1,6 @@
-const isImage = require('./isImage');
 const getSizeAfterTransformations = require('./getSizeAfterTransformations');
 const createUrl = require('./createUrl');
+const objectAssign = require('object-assign');
 
 module.exports = () => {
   const field = {
@@ -16,10 +16,16 @@ module.exports = () => {
       resizes: {
         type: '[Int]',
         defaultValue: [375, 1024, 1440, 2560]
-      }
+      },
+      forceBlurhash: 'Boolean',
     },
-    resolve: (image, { maxWidth, maxHeight, imgixParams = {}, sizes, resizes }) => {
-      if (!isImage(image)) {
+    resolve: (
+      node,
+      { forceBlurhash, maxWidth, maxHeight, imgixParams = {}, sizes, resizes },
+    ) => {
+      const image = node.entityPayload.attributes;
+
+      if (!image.is_image || image.format === 'svg') {
         return null;
       }
 
@@ -43,7 +49,16 @@ module.exports = () => {
             dpr: 1,
             w: screen
           };
-          const url = createUrl(image, imgixParams, extraParams, true);
+
+          if (!imgixParams.w && !imgixParams.h) {
+            extraParams.w = finalWidth;
+          }
+
+          const url = createUrl(
+            image.url,
+            objectAssign({}, imgixParams, extraParams),
+            { autoFormat: true, focalPoint: node.focalPoint },
+          );
 
           return `${url} ${Math.round(screen)}w`;
         })
@@ -51,12 +66,16 @@ module.exports = () => {
 
       return {
         aspectRatio,
-        src: createUrl(image, imgixParams, {}, true),
+        src: createUrl(image.url, imgixParams, {
+          autoFormat: true,
+          focalPoint: node.focalPoint,
+        }),
         width: finalWidth,
         height: finalHeight,
         format: image.format,
         srcSet,
         sizes: realSizes,
+        forceBlurhash,
       };
     },
   };
@@ -66,4 +85,3 @@ module.exports = () => {
     sizes: field,
   };
 };
-

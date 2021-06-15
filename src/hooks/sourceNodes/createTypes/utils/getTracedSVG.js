@@ -2,10 +2,11 @@ const Queue = require('promise-queue');
 const fs = require('fs-extra');
 const path = require('path');
 const md5 = require('md5');
-const request = require('request');
 const resizeUrl = require('./resizeUrl');
+const got = require('got');
 
-const queue = new Queue(3, Infinity);
+const queue = new Queue(10, Infinity);
+const promises = {};
 
 function download(requestUrl, cacheDir) {
   const cacheFile = path.join(cacheDir, md5(requestUrl));
@@ -14,45 +15,62 @@ function download(requestUrl, cacheDir) {
     return Promise.resolve(cacheFile);
   }
 
-  return queue.add(
-    () =>
-      new Promise((resolve, reject) => {
-        const r = request(requestUrl);
+  const key = JSON.stringify({ requestUrl, cacheFile });
 
-        r.on('error', reject);
-        r.on('response', function(resp) {
-          if (resp.statusCode !== 200) {
-            reject();
-          }
+  if (promises[key]) {
+    return promises[key];
+  }
 
-          r.pipe(fs.createWriteStream(cacheFile))
-            .on('finish', () => resolve(cacheFile))
-            .on('error', reject);
-        });
-      }),
-  );
+  promises[key] = queue.add(() => {
+    return got(requestUrl, {
+      responseType: 'buffer',
+      maxRedirects: 10,
+      retry: {
+        limit: 5,
+      },
+    }).then(response => {
+      fs.writeFileSync(cacheFile, response.body);
+      return cacheFile;
+    });
+  });
+
+  return promises[key];
 }
 
-module.exports = async ({ src, width, height, aspectRatio }, cacheDir) => {
+module.exports = async ({ src, width, height }, cacheDir) => {
   const { traceSVG } = require(`gatsby-plugin-sharp`);
 
-  const absolutePath = await download(
-    resizeUrl({ url: src, aspectRatio, width, height }, 100),
-    cacheDir,
-  );
+  let absolutePath;
+  const url = resizeUrl({ url: src, width, height }, 80);
+
+  try {
+    absolutePath = await download(url, cacheDir);
+  } catch (e) {
+    console.log(
+      `Error downloading ${url} to generate traced SVG!: ${e.message}`,
+    );
+    return null;
+  }
 
   const name = path.basename(absolutePath);
 
-  return traceSVG({
-    file: {
-      internal: {
-        contentDigest: md5(absolutePath),
+  try {
+    const result = await traceSVG({
+      file: {
+        internal: {
+          contentDigest: md5(absolutePath),
+        },
+        name,
+        extension: 'png',
+        absolutePath,
       },
-      name,
-      extension: 'jpg',
-      absolutePath,
-    },
-    args: { toFormat: '' },
-    fileArgs: {},
-  });
+      args: { toFormat: '' },
+      fileArgs: {},
+    });
+    return result;
+  } catch (e) {
+    const content = fs.readFileSync(absolutePath, { encoding: 'base64' });
+    console.log(`Error generating traced SVG for "${url}": ${e.message}. Local file: ${absolutePath}, content: "${content}"`);
+    return null;
+  }
 };

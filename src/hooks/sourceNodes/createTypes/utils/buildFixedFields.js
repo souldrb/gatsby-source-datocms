@@ -1,4 +1,3 @@
-const isImage = require('./isImage');
 const getSizeAfterTransformations = require('./getSizeAfterTransformations');
 const createUrl = require('./createUrl');
 const objectAssign = require('object-assign');
@@ -12,11 +11,13 @@ module.exports = () => {
         defaultValue: 400,
       },
       height: 'Int',
-      imgixParams: 'DatoCmsImgixParams'
+      forceBlurhash: 'Boolean',
+      imgixParams: 'DatoCmsImgixParams',
     },
-    resolve: (image, { width, height, imgixParams = {} }) => {
+    resolve: (node, { forceBlurhash, width, height, imgixParams = {} }) => {
+      const image = node.entityPayload.attributes;
 
-      if (!isImage(image)) {
+      if (!image.is_image || image.format === 'svg') {
         return null;
       }
 
@@ -44,7 +45,11 @@ module.exports = () => {
           if (!mergedImgixParams.w && !mergedImgixParams.h) {
             extraParams.w = finalWidth;
           }
-          const url = createUrl(image, mergedImgixParams, extraParams, true);
+          const url = createUrl(
+            image.url,
+            objectAssign({}, mergedImgixParams, extraParams),
+            { autoFormat: true, focalPoint: node.focalPoint },
+          );
 
           return `${url} ${dpr}x`;
         })
@@ -55,8 +60,12 @@ module.exports = () => {
         width: finalWidth,
         height: finalHeight,
         format: image.format,
-        src: createUrl(image, mergedImgixParams, {}, true),
+        src: createUrl(image.url, mergedImgixParams, {
+          autoFormat: true,
+          focalPoint: node.focalPoint,
+        }),
         srcSet,
+        forceBlurhash,
       };
     },
   };
@@ -66,4 +75,3 @@ module.exports = () => {
     resolutions: field,
   };
 };
-
