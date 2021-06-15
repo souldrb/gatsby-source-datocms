@@ -5,7 +5,7 @@ const { localizedRead } = require('datocms-client');
 
 module.exports = function buildSiteNode(
   entity,
-  { entitiesRepo, localeFallbacks },
+  { entitiesRepo, localeFallbacks, generateType },
 ) {
   return [].concat(
     ...entity.locales.map(locale => {
@@ -13,7 +13,7 @@ module.exports = function buildSiteNode(
       const i18n = { locale, fallbacks: localeFallbacks };
 
       const siteNode = buildNode(
-        'DatoCmsSite',
+        generateType('Site'),
         `${entity.id}-${locale}`,
         node => {
           node.locale = locale;
@@ -37,9 +37,7 @@ module.exports = function buildSiteNode(
                 title: node.globalSeo.fallbackSeo.title,
                 description: node.globalSeo.fallbackSeo.description,
                 twitterCard: node.globalSeo.fallbackSeo.twitterCard,
-                image___NODE:
-                  node.globalSeo.fallbackSeo.image &&
-                  `DatoCmsAsset-${node.globalSeo.fallbackSeo.image}`,
+                image: node.globalSeo.fallbackSeo.image,
               };
             }
           }

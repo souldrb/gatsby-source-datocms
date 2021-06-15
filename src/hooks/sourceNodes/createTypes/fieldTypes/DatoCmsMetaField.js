@@ -1,6 +1,6 @@
 const dateType = {
   type: 'Date',
-  extensions: { dateformat: {} },
+  extensions: { dateformat: {}, proxy: {} },
 };
 
 module.exports = ({ actions, schema }) => {
@@ -18,4 +18,4 @@ module.exports = ({ actions, schema }) => {
       },
     }),
   ]);
-}
+};
