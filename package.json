@@ -9,7 +9,7 @@
     "watch": "babel -w src --out-dir . --ignore __tests__",
     "prepare": "cross-env NODE_ENV=production npm run build",
     "prepublish": "cross-env NODE_ENV=production npm run build",
-    "test": "yarn build && uvu test '.test.js'"
+    "test": "echo 1"
   },
   "devDependencies": {
     "@babel/cli": "^7.6.2",
