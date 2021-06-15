@@ -3,14 +3,11 @@
   "version": "2.6.16",
   "description": "Gatsby source plugin for building websites using DatoCMS as data source",
   "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/datocms/gatsby-source-datocms.git"
-  },
   "scripts": {
     "prettier": "prettier --write \"src/**/*.{js,jsx}\"",
     "build": "babel src --out-dir . --ignore __tests__",
     "watch": "babel -w src --out-dir . --ignore __tests__",
+    "prepare": "cross-env NODE_ENV=production npm run build",
     "prepublish": "cross-env NODE_ENV=production npm run build",
     "test": "yarn build && uvu test '.test.js'"
   },
